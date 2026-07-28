@@ -45,17 +45,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user || null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfiles(currentUser);
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        const currentUser = data?.session?.user || null;
+        setUser(currentUser);
+        if (currentUser) {
+          fetchProfiles(currentUser);
+        }
+      })
+      .catch((err) => {
+        console.warn('[AuthContext] Session fetch error:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     // Listen to Auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user || null;
       setUser(currentUser);
       if (currentUser) {
@@ -67,7 +73,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => data?.subscription?.unsubscribe();
   }, []);
 
   // Login dengan Username & Password
